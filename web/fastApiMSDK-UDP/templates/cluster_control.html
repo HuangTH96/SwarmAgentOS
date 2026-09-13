@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无人机集群控制中心</title>
+    <link rel="stylesheet" href="/static/control.css">
+     <!-- 引入高德地图API -->
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=9cfad912233774b8e63d7bb5db45be21&plugin=AMap.ToolBar,AMap.Scale"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧集群控制面板 -->
+        <div class="panel left-panel">
+            <h1>无人机集群控制中心</h1>
+            <!-- 多选已连接无人机列表 -->
+            <div class="panel-section client-list info-card">
+                <h2>已连接的无人机</h2>
+                <form id="cluster-client-form">
+                    <div id="cluster-active-clients-display" class="info-display">
+                        <div class="data-item">正在获取连接状态...</div>
+                    </div>
+                </form>
+            </div>
+            <!-- 集群控制按钮区 -->
+            <div class="panel-section button-group info-card">
+                <button type="button" class="fade-in btn-dark" id="cluster-btn-takeoff">集群起飞 (Takeoff)</button>
+                <button type="button" class="fade-in btn-dark" id="cluster-btn-land">集群降落至0.7m</button>
+                <button type="button" class="fade-in btn-dark" id="cluster-btn-confirm-land">集群确认降落</button>
+                <button type="button" class="fade-in btn-dark" id="cluster-btn-go-home">集群返航</button>
+                <button type="button" class="fade-in btn-dark" id="cluster-btn-cancel-go-home">集群取消返航</button>
+                <button type="button" class="fade-in btn-dark" id="cluster-btn-enable-vstick">集群启用摇杆</button>
+                <button type="button" class="fade-in btn-dark" id="cluster-btn-disable-vstick">集群关闭摇杆</button>
+                <button type="button" class="fade-in btn-dark" id="cluster-btn-enable-vstick-advanced">集群高级指令</button>
+                <button type="button" class="fade-in btn-dark" id="cluster-btn-disable-vstick-advanced">集群关闭高级指令</button>
+                <button type="button" class="btn-dark" id="cluster-btn-enable-ros-control">集群开启ros控制</button>
+                <button type="button" class="btn-dark" id="cluster-btn-disable-ros-control">集群关闭ros控制</button>
+            </div>
+            <!-- 系统日志 -->
+            <div class="panel-section status-log-section info-card">
+                <h2>系统日志</h2>
+                <div id="cluster-status-log" class="log-display"></div>
+            </div>
+        </div>
+        <!-- 右侧可扩展区域 -->
+        <div class="panel right-panel">
+            <!-- 上方地图区域 -->
+            <div class="panel-section map-area-section info-card">
+                <h2>飞行轨迹/地图</h2>
+                <!-- ===== 开始添加的部分 ===== -->
+                <div class="map-controls" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <button id="btn-send-target-latlon" class="btn btn-dark btn-primary">
+                        <span class="btn-icon">📍</span>
+                        发送目标点经纬度
+                    </button>
+                    <button id="btn-send-origin" class="btn btn-dark btn-primary">
+                        <span class="btn-icon">🔵</span>
+                        设置原点坐标
+                    </button>
+                    <div class="target-coords" id="target-coords" style="font-size: 0.9em; color: #ccc;">
+                        <span>目标点坐标: </span>
+                        <span class="coord-value">未选择</span>
+                    </div>
+                </div>
+                <!-- ===== 结束添加的部分 ===== -->
+                <div id="cluster-map-area" class="map-placeholder" style="height: 320px;"></div>
+            </div>
+            <!-- 下方摇杆和云台控制区 -->
+            <div class="video-telemetry-wrapper">
+                <!-- 虚拟摇杆区域 -->
+                <div class="panel-section joystick-section info-card">
+                    <h2>虚拟摇杆 (Virtual Joysticks)</h2>
+                    <div class="joysticks-wrapper">
+                        <!-- 左侧摇杆 -->
+                        <div class="joystick-container fade-in">
+                            <div class="joystick-base">
+                                <div id="joystick-left" class="joystick-stick"></div>
+                            </div>
+                            <p class="joystick-label">高度/旋转</p>
+                        </div>
+                        <!-- 右侧摇杆 -->
+                        <div class="joystick-container fade-in">
+                            <div class="joystick-base">
+                                <div id="joystick-right" class="joystick-stick"></div>
+                            </div>
+                            <p class="joystick-label">前进/左右</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- 云台控制区域 -->
+                <div class="panel-section gimbal-section info-card">
+                    <h2>云台控制 (Gimbal Control)</h2>
+                    <div class="gimbal-controls-wrapper">
+                        <!-- 云台摇杆 -->
+                        <div class="joystick-container fade-in">
+                            <div class="joystick-base">
+                                <div id="joystick-gimbal" class="joystick-stick"></div>
+                            </div>
+                            <p class="joystick-label">俯仰/偏航 (Pitch/Yaw)</p>
+                        </div>
+                        <!-- 云台按钮 -->
+                        <div class="gimbal-buttons fade-in" style="display: flex; flex-direction: column; gap: 8px; justify-content: flex-start; margin-top: -30px;">
+                            <p style="margin-bottom: 6px;"><strong>模式 (Mode):</strong></p>
+                            <button id="gimbal-mode-free" class="btn">自由模式 (Free)</button>
+                            <button id="gimbal-mode-follow" class="btn">偏航跟随 (Follow)</button>
+                            <button id="gimbal-reset" class="btn btn-warning" style="margin-top: 0px;">复位云台 (Reset)</button>
+                        </div>
+                    </div>
+                </div>
+                <!-- 集群位置控制模块 -->
+                <div class="position-control-section info-card" style="min-width: 120px; max-width: 380px;">
+                    <h2>集群位置控制</h2>
+                    <div class="position-controls-grid" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                        <div class="input-group" style="flex: 1 1 40%; min-width: 110px; max-width: 150px;">
+                            <label for="cluster-pos-x">X 坐标 (米)</label>
+                            <div class="input-with-buttons">
+                                <button class="decrement">-</button>
+                                <input type="number" id="cluster-pos-x" value="0.0" step="0.5" class="value-update">
+                                <button class="increment">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="flex: 1 1 40%; min-width: 110px; max-width: 150px;">
+                            <label for="cluster-pos-y">Y 坐标 (米)</label>
+                            <div class="input-with-buttons">
+                                <button class="decrement">-</button>
+                                <input type="number" id="cluster-pos-y" value="0.0" step="0.5" class="value-update">
+                                <button class="increment">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="flex: 1 1 40%; min-width: 110px; max-width: 150px;">
+                            <label for="cluster-pos-z">Z 坐标 (米)</label>
+                            <div class="input-with-buttons">
+                                <button class="decrement">-</button>
+                                <input type="number" id="cluster-pos-z" value="0.0" step="0.5" class="value-update">
+                                <button class="increment">+</button>
+                            </div>
+                        </div>
+                        <div class="input-group" style="flex: 1 1 40%; min-width: 110px; max-width: 150px;">
+                            <label for="cluster-pos-yaw">偏航角 (度)</label>
+                            <div class="input-with-buttons">
+                                <button class="decrement">-</button>
+                                <input type="number" id="cluster-pos-yaw" value="0.0" step="5" class="value-update">
+                                <button class="increment">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: center; margin-top: 14px;">
+                        <button id="cluster-btn-send-position" class="btn-primary fade-in btn-dark" style="width: 90%; font-size: 1em; border-radius: 8px; padding: 8px 0;">🚩 发送位置指令</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/joysticks.js"></script>
+    <script src="/static/gimbal.js"></script>
+        <script src="/static/cluster_map.js"></script>
+    <script src="/static/cluster_script.js"></script>
+
+</body>
+</html> 

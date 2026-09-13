@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>无人机综合控制中心</title>
+    <!-- 引入CSS文件 -->
+    <link rel="stylesheet" href="/static/control.css">
+    <!-- 引入高德地图API -->
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=2.0&key=9cfad912233774b8e63d7bb5db45be21&plugin=AMap.ToolBar,AMap.Scale"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧控制面板 -->
+        <div class="panel left-panel">
+            <h1>无人机控制中心</h1>
+
+            <!-- 已连接的无人机列表 -->
+            <div class="panel-section client-list info-card">
+                <h2>已连接的无人机</h2>
+                <div id="active-clients-display" class="info-display">
+                    <div class="data-item">
+                        <span class="status-indicator online">在线</span>
+                        <span class="data-label">正在获取连接状态...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 选择无人机 -->
+            <div class="panel-section control-group info-card">
+                <label for="client-selector">选择无人机:</label>
+                <select id="client-selector">
+                    <option value="">-- 等待无人机连接 --</option>
+                </select>
+            </div>
+
+            <!-- 控制按钮 -->
+            <div class="panel-section button-group info-card">
+                <button id="btn-takeoff" class="fade-in">起飞 (Takeoff)</button>
+                <button id="btn-land" class="fade-in">降落至0.7m</button>
+                <button id="btn-confirm-land" class="fade-in">确认降落</button>
+                <button id="btn-go-home" class="fade-in">返航</button>
+                <button id="btn-cancel-go-home" class="fade-in">取消返航</button>
+                <button id="btn-enable-vstick" class="fade-in">启用摇杆</button>
+                <button id="btn-disable-vstick" class="fade-in">关闭摇杆</button>
+                <button id="btn-enable-vstick-advanced" class="fade-in">高级指令</button>
+                <button id="btn-disable-vstick-advanced" class="fade-in">关闭高级指令</button>
+                <button id="btn-enable-ros-control">开启ros控制</button>
+                <button id="btn-disable-ros-control">关闭ros控制</button>
+            </div>
+
+            <!-- 双虚拟摇杆区域 -->
+            <div class="panel-section joystick-section">
+                <h2>虚拟摇杆 (Virtual Joysticks)</h2>
+                <div class="joysticks-wrapper">
+                    <!-- 左侧摇杆 -->
+                    <div class="joystick-container">
+                        <div class="joystick-base">
+                            <div id="joystick-left" class="joystick-stick"></div>
+                        </div>
+                        <p class="joystick-label">高度/旋转</p>
+                    </div>
+                    <!-- 右侧摇杆 -->
+                    <div class="joystick-container">
+                        <div class="joystick-base">
+                            <div id="joystick-right" class="joystick-stick"></div>
+                        </div>
+                        <p class="joystick-label">前进/左右</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 云台控制区域 -->
+            <div class="panel-section gimbal-section info-card">
+                <h2>云台控制 (Gimbal Control)</h2>
+                <div class="gimbal-controls-wrapper">
+                    <!-- 云台摇杆 -->
+                    <div class="joystick-container fade-in">
+                        <div class="joystick-base">
+                            <div id="joystick-gimbal" class="joystick-stick"></div>
+                        </div>
+                        <p class="joystick-label">俯仰/偏航 (Pitch/Yaw)</p>
+                    </div>
+                    <!-- 云台按钮 -->
+                    <div class="gimbal-buttons fade-in">
+                        <p><strong>模式 (Mode):</strong></p>
+                        <button id="gimbal-mode-free" class="btn">自由模式 (Free)</button>
+                        <button id="gimbal-mode-follow" class="btn">偏航跟随 (Follow)</button>
+                        <hr>
+                        <button id="gimbal-reset" class="btn btn-warning">复位云台 (Reset)</button>
+                    </div>
+                </div>
+            </div>
+            <div class="panel-section advanced-stick-section">
+                <h2>高级虚拟摇杆指令 (Advanced)</h2>
+                <div class="advanced-controls-grid">
+                    <!-- 根据DJI MSDK V5标准，对输入框进行功能标注 -->
+                    <div class="input-group">
+                        <label for="adv-left-x">X坐标</label>
+                        <input type="number" id="adv-left-x" value="0.0" min="-10.0" max="10.0" step="1">
+                    </div>
+                    <div class="input-group">
+                        <label for="adv-left-y">Y坐标</label>
+                        <input type="number" id="adv-left-y" value="0.0" min="-10.0" max="10.0" step="1">
+                    </div>
+                    <div class="input-group">
+                        <label for="adv-right-x">旋转</label>
+                        <input type="number" id="adv-right-x" value="0.0" min="-50.0" max="50.0" step="5">
+                    </div>
+                    <div class="input-group">
+                        <label for="adv-right-y">高度</label>
+                        <input type="number" id="adv-right-y" value="0.0" min="-10.0" max="10.0" step="1">
+                    </div>
+                </div>
+                <button id="btn-send-advanced-v">发送速度指令</button>
+                <button id="btn-send-advanced-p">发送位置指令</button>
+            </div>
+             <div class="panel-section llm-control-section info-card">
+                <h2>自然语言指令 (AI)</h2>
+                <textarea id="llm-prompt-input" rows="3" placeholder="例如：向前飞10米，或以2m/s的速度向左飞3秒"></textarea>
+                <button id="btn-send-llm-prompt" class="btn-primary">发送指令</button>
+                <div class="llm-status">
+                    <span>解析结果: </span>
+                    <code id="llm-command-output">等待输入...</code>
+                </div>
+            </div>
+            <!-- 系统日志 -->
+            <div class="panel-section status-log-section info-card">
+                <h2>系统日志</h2>
+                <div id="status-log" class="log-display"></div>
+            </div>
+        </div>
+
+        <div class="panel right-panel">
+            <!-- 地图/轨迹区域 -->
+            <div class="panel-section map-area-section info-card">
+                <h2>飞行轨迹/地图</h2>
+                <div class="map-controls">
+                    <button id="btn-send-target" class="btn btn-primary" disabled>
+                        <span class="btn-icon">📍</span>
+                        发送目标点坐标
+                    </button>
+                    <button id="btn-send-target-latlon" class="btn btn-primary" >
+                        <span class="btn-icon">📍</span>
+                        发送目标点经纬度
+                    </button>
+                    <button id="btn-send-origin" class="btn btn-primary" >
+                        <span class="btn-icon">🔵</span>
+                        设置原点坐标
+                    </button>
+                    <div class="target-coords" id="target-coords">
+                        <span>目标点坐标: </span>
+                        <span class="coord-value">未选择</span>
+                    </div>
+                </div>
+                <div id="map-area" class="map-placeholder">
+                    <!-- 高德地图会填充此区域 -->
+                </div>
+            </div>
+
+            <div class="video-telemetry-wrapper">
+                <!-- 视频区域 -->
+                <div id="video-area" class="panel-section info-card">
+                    <div class="video-header">
+                        <div id="status" class="status-bar">
+                            <h2>直播</h2>
+                            <span id="status-text" class="status-indicator">准备就绪</span>
+                        </div>
+                        <div class="header-controls fade-in">
+                            <button id="btn-start-live" class="btn btn-primary">开始</button>
+                            <button id="btn-stop-live" class="btn">结束</button>
+                            <button id="startPlayBtn" class="btn btn-primary">播放</button>
+                            <button id="startPlayBtn" class="btn btn-primary">播放2</button>
+                            <button id="stopPlayBtn" class="btn">停止</button>
+                        </div>
+                    </div>
+                    <video id="videoPlayer" class="video-player" controls muted autoplay></video>
+                </div>
+
+                <!-- 无人机遥测信息 -->
+                <div class="panel-section drone-info info-card">
+                    <h2>无人机信息</h2>
+                    <div id="drone-info-display" class="info-display">
+                        <div class="data-item">
+                            <span class="data-label">状态</span>
+                            <span class="data-value">等待连接...</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">电池电量</span>
+                            <span class="data-value">--</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">GPS信号</span>
+                            <span class="data-value">--</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">高度</span>
+                            <span class="data-value">--</span>
+                        </div>
+                        <div class="data-item">
+                            <span class="data-label">速度</span>
+                            <span class="data-value">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const controlSocket = new WebSocket(`ws://${window.location.host}/ws/control`);
+
+        controlSocket.onopen = function(event) {
+            console.log("Control WebSocket connection established.");
+            updateStatusIndicator('online');
+        };
+
+        controlSocket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            console.log("Received from server:", data);
+            updateDataValues(data);
+        };
+
+        controlSocket.onclose = function(event) {
+            console.log("Control WebSocket connection closed.");
+            updateStatusIndicator('offline');
+        };
+
+        controlSocket.onerror = function(error) {
+            console.error("WebSocket Error:", error);
+            updateStatusIndicator('offline');
+        };
+
+        function updateStatusIndicator(status) {
+            const statusText = document.getElementById('status-text');
+            statusText.className = `status-indicator ${status}`;
+            statusText.textContent = status === 'online' ? '在线' : '离线';
+        }
+
+        function updateDataValues(data) {
+            // 添加数值更新动画
+            const dataValues = document.querySelectorAll('.data-value');
+            dataValues.forEach(value => {
+                if (value.textContent !== data[value.dataset.key]) {
+                    value.classList.add('value-update');
+                    setTimeout(() => value.classList.remove('value-update'), 300);
+                }
+            });
+        }
+    </script>
+
+    <!-- 外部库 -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+    <script src="/static/combined_script.js"></script>
+    <script src="/static/video_script.js"></script>
+    <script src="/static/joysticks.js"></script>
+    <script src="/static/gaodemap.js"></script>
+    <script src="/static/gimbal.js"></script>
+    <script src="/static/llm_control.js"></script>
+</body>
+</html>

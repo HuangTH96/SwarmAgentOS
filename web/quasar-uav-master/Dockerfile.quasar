@@ -1,0 +1,31 @@
+# ---------- 编译阶段 ----------
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# 1. 先拷包管理文件 + 校验必备文件
+COPY package*.json quasar.config.js ./
+
+# 如果 index.html 在 public 目录
+COPY index.html ./
+
+# 2. 装依赖（国内镜像）
+RUN npm config set registry https://registry.npmmirror.com \
+ && npm ci
+
+# 3. 再拷剩余源码（src、public、postcss.config.js …）
+COPY . .
+
+# 4. 构建
+RUN npm run build
+
+# ---------- 运行阶段 ----------
+FROM nginx:alpine
+
+# 5. 把构建产物扔进 Nginx 默认目录
+COPY --from=builder /app/dist/spa /usr/share/nginx/html
+
+# 6. 如果你有自定义 nginx 配置
+COPY nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 80

@@ -1,0 +1,41 @@
+{
+  "name": "quasar-uav",
+  "version": "0.0.1",
+  "description": "A Quasar Project",
+  "productName": "无人机集群操作系统",
+  "author": "iStudy <277591399@qq.com>",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "echo \"No test specified\" && exit 0",
+    "dev": "quasar dev",
+    "build": "quasar build",
+    "postinstall": "quasar prepare"
+  },
+  "dependencies": {
+    "@amap/amap-jsapi-loader": "^1.0.1",
+    "@quasar/extras": "^1.16.4",
+    "@types/leaflet": "^1.9.21",
+    "axios": "^1.2.1",
+    "cytoscape": "^3.33.1",
+    "leaflet": "^1.9.4",
+    "leaflet-rotatedmarker": "^0.2.0",
+    "nipplejs": "^0.10.2",
+    "ol": "^10.6.1",
+    "pinia": "^3.0.1",
+    "quasar": "^2.16.0",
+    "vue": "^3.4.18",
+    "vue-router": "^4.0.0"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^2.1.0",
+    "autoprefixer": "^10.4.2",
+    "postcss": "^8.4.14"
+  },
+  "engines": {
+    "node": "^28 || ^26 || ^24 || ^22 || ^20 || ^18",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  }
+}
+

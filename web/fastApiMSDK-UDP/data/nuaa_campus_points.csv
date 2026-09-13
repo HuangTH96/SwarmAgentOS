@@ -1,0 +1,13 @@
+name,longitude,latitude,type
+Main_Quad,118.826,31.938,normal
+West_Field,118.8235,31.9365,normal
+East_Field,118.8275,31.937,normal
+Library,118.8265,31.9382,library
+Main_Building,118.8255,31.9385,administration
+Dormitory_A,118.824,31.936,dormitory
+Dormitory_B,118.8245,31.9368,dormitory
+Sports_Center,118.826,31.9365,sports
+Engineering_Building,118.827,31.9375,academic
+Auditorium,118.8258,31.9378,entertainment
+Cafeteria,118.8248,31.937,food
+

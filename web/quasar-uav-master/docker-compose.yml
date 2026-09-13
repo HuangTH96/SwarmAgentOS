@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: drone-postgres
+    environment:
+      POSTGRES_DB: drone
+      POSTGRES_USER: drone_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+      - drone_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drone_admin -d drone"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - drone-network
+
+  quasar:
+    build:
+      context: .
+      dockerfile: Dockerfile.quasar
+    container_name: quasar
+    ports:
+      - "80:80"
+    networks:
+      - drone-network
+
+  fastapi-msdk-udp:
+    build:
+      context: ../fastApiMSDK-UDP      # ← 指向 fastApi 目录
+      dockerfile: Dockerfile            # ← 该目录下的 Dockerfile
+    image: fastapi-msdk-udp:latest      # 构建完自动打这个 tag
+    container_name: fastapi-msdk-udp
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://drone_admin:${POSTGRES_PASSWORD}@postgres:5432/drone
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_MINUTES: 720
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    ports:
+      - "8081:8081/tcp"
+      - "8081:8081/udp"
+    networks:
+      - drone-network
+
+networks:
+  drone-network:
+    driver: bridge
+
+volumes:
+  drone_postgres_data:
+
