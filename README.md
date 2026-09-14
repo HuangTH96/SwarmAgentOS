@@ -2,4 +2,4 @@
 ![操作系统功能板块 - v1.0](./docs/function_blocks_v1.0.png)
 
 `./docs/` 中的各文档用于解析并记录功能板块的实现逻辑和二次开发路线：
-1. `uav_onboarding_and_control.md` 记录如何接入Tello和PX4，并通过Web页面的虚拟摇杆进行控制
+1. `uav_onboarding_and_control.md` 记录如何通过Web页面的虚拟摇杆控制DJI、Tello和PX4，并在Web上查看飞行器状态和实时画面
